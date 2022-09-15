@@ -41,7 +41,11 @@ def add_comment(
 			"content": extract_images_from_html(reference_doc, content, is_private=True),
 		}
 	)
-	comment.insert(ignore_permissions=True)
+	if comment.doctype in frappe.hooks.indirect_link:
+		project = frappe.db.get_value(frappe.hooks.indirect_link[comment.doctype]["doctype"], comment.get(frappe.hooks.indirect_link[comment.doctype]["field"]), "project")
+		if project:
+			comment.project = project
+	comment.insert(ignore_permissions=False)
 
 	if frappe.get_cached_value("User", frappe.session.user, "follow_commented_documents"):
 		follow_document(comment.reference_doctype, comment.reference_name, frappe.session.user)

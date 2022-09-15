@@ -71,7 +71,13 @@
   "column_break_22",
   "description",
   "oldfieldname",
-  "oldfieldtype"
+  "oldfieldtype",
+  "context",
+  "location",
+  "on_create_workitem",
+  "on_edit_workitem",
+  "on_create_project",
+  "on_edit_project"
  ],
  "fields": [
   {
@@ -541,13 +547,53 @@
    "fieldname": "is_virtual",
    "fieldtype": "Check",
    "label": "Virtual"
+  },
+  {
+   "fieldname": "context",
+   "fieldtype": "Small Text",
+   "label": "Context",
+   "options": "Context"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Small Text",
+   "label": "Location",
+   "options": "Location"
+  },
+  {
+   "default": "0",
+   "fieldname": "on_create_workitem",
+   "fieldtype": "Check",
+   "label": "On Create WorkItem",
+   "options": "Create WorkItem Screen"
+  },
+  {
+   "default": "0",
+   "fieldname": "on_edit_workitem",
+   "fieldtype": "Check",
+   "label": "On Edit WorkItem",
+   "options": "On Edit/View WorkItem"
+  },
+  {
+   "default": "0",
+   "fieldname": "on_create_project",
+   "fieldtype": "Check",
+   "label": "On Create Project",
+   "options": "On Create Project"
+  },
+  {
+   "default": "0",
+   "fieldname": "on_edit_project",
+   "fieldtype": "Check",
+   "label": "On Edit Project",
+   "options": "On Edit Project"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-04-19 12:27:28.641580",
+ "modified": "2022-09-14 11:20:31.818917",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

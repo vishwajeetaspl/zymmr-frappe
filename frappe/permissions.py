@@ -3,7 +3,7 @@
 import copy
 
 import frappe
-import frappe.share
+# import frappe.share
 from frappe import _, msgprint
 from frappe.query_builder import DocType
 from frappe.utils import cint, cstr
@@ -155,6 +155,65 @@ def has_permission(
 
 	return bool(perm)
 
+@frappe.whitelist()
+def get_everest_roles(project, user=None):
+	if not user:
+		user = frappe.session.user
+	roles = []
+	role_list = frappe.db.sql('''
+		select
+			perm_scheme.role as rolename
+		from
+			`tabProject` as project
+		inner join
+			`tabProject Role User Assignment` as project_user_assign
+		on
+			project.name = project_user_assign.parent
+		inner join
+			`tabPermission Scheme Assignment` as perm_scheme
+		on
+			perm_scheme.assignee = project_user_assign.project_role
+			and perm_scheme.type = 'Project Role' and
+			project.permission_scheme = perm_scheme.parent
+		where
+			project.name =  %(project)s and project_user_assign.user = %(user)s
+	union
+		select
+			perm_scheme.role from `tabProject` as project
+		inner join
+			`tabPermission Scheme Assignment` as perm_scheme
+		on
+			perm_scheme.parent = project.permission_scheme
+			and perm_scheme.type = 'User'
+		where
+			project.name = %(project)s and perm_scheme.assignee = %(user)s
+	union
+		select
+			psa.role
+		from
+			`tabUser Multiselect` as um
+		join
+			`tabProject Role` as pr
+		on
+			um.parent=pr.name
+		join
+			`tabPermission Scheme Assignment` as psa
+		on
+			pr.name=psa.assignee
+		join
+			`tabProject` as project
+		on
+			psa.parent=project.permission_scheme
+		where
+			um.user=%(user)s and project.name = %(project)s
+			''',
+		{"user": frappe.session.user, "project": project}, as_dict = 1
+	)
+	for d in role_list:
+		roles.append(d.rolename)
+	# roles.append('All')
+	# roles.append('Guest')
+	return roles
 
 def get_doc_permissions(doc, user=None, ptype=None):
 	"""Returns a dict of evaluated permissions for given `doc` like `{"read":1, "write":1}`"""
@@ -165,7 +224,21 @@ def get_doc_permissions(doc, user=None, ptype=None):
 		return {"read": 1, "write": 1}
 
 	meta = frappe.get_meta(doc.doctype)
-
+	if 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", doc.doctype, "Module") == "Everest" or hasattr(doc, "project")):
+		perm = []
+		project = None
+		if hasattr(doc, "project"):
+			project = doc.project
+		elif 'doctype' in doc.as_dict() and doc.doctype in frappe.hooks.indirect_link:
+			project_doc = frappe.db.get_value(frappe.hooks.indirect_link[doc.doctype]["doctype"], doc[frappe.hooks.indirect_link[doc.doctype]["field"]], "project")
+			if project_doc:
+				project = project_doc
+		elif doc.doctype == "Project":
+			project = doc.name
+		if project:
+			perm = get_everest_roles(project, user)
+		perm_list = [i for i in meta.permissions if i.role in perm]
+		meta.permissions = perm_list
 	def is_user_owner():
 		return (doc.get("owner") or "").lower() == user.lower()
 
@@ -431,10 +504,54 @@ def get_roles(user=None, with_standard=True):
 				.select(table.role)
 				.run(pluck=True)
 			)
-			return roles + ["All", "Guest"]
+			return [i.rolename for i in frappe.db.sql('''
+						select
+						    perm_scheme.role as rolename
+						from
+						    `tabProject` as project
+						inner join
+						    `tabProject Role User Assignment` as project_user_assign
+						on
+						    project.name = project_user_assign.parent
+						inner join
+						    `tabPermission Scheme Assignment` as perm_scheme
+						on
+						    perm_scheme.assignee = project_user_assign.project_role
+						    and perm_scheme.type = 'Project Role' and
+							project.permission_scheme = perm_scheme.parent
+						where
+						    project_user_assign.user = %(user)s
+						union
+						select
+						    perm_scheme.role as rolename from `tabProject` as project
+						inner join
+						    `tabPermission Scheme Assignment` as perm_scheme
+						on
+						    perm_scheme.parent = project.permission_scheme
+						    and perm_scheme.type = 'User'
+						where
+						    perm_scheme.assignee = %(user)s
+						Union
+							select
+								psa.role as rolename
+							from
+								`tabUser Multiselect` as um
+							join
+								`tabProject Role` as pr
+							on
+								um.parent=pr.name
+							join
+								`tabPermission Scheme Assignment` as psa
+							on
+								pr.name=psa.assignee
+							where
+								um.user=%(user)s''',
+						{"user": user}, as_dict = 1
+						)
+					] + roles
 
-	roles = frappe.cache().hget("roles", user, get)
-
+	# roles = frappe.cache().hget("roles", user, get)
+	roles = get()
 	# filter standard if required
 	if not with_standard:
 		roles = [r for r in roles if r not in ["All", "Guest", "Administrator"]]

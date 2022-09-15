@@ -21,6 +21,13 @@ after_install = "frappe.utils.install.after_install"
 
 page_js = {"setup-wizard": "public/js/frappe/setup_wizard.js"}
 
+indirect_link = {
+	"Sprint": {"doctype":"Kanban Board", "field":"board"},
+	"Board Settings": {"doctype":"Kanban Board", "field":"board"},
+	"Comment": {"doctype": "Work Item", "field":"reference_name"},
+	"Time Log": {"doctype": "Work Item", "field":"work_item"}
+}
+
 # website
 app_include_js = [
 	"libs.bundle.js",

@@ -16,6 +16,7 @@ from frappe.utils import cint
 from frappe.utils.csvutils import build_csv_response
 from frappe.utils.image import optimize_image
 from frappe.utils.response import build_response
+import json
 
 if TYPE_CHECKING:
 	from frappe.core.doctype.file.file import File
@@ -42,6 +43,14 @@ def handle():
 	data = None
 
 	if cmd != "login":
+		if 'doc' in frappe.local.form_dict:
+			doc = json.loads(frappe.local.form_dict.doc or {})
+			doc = frappe._dict(doc)
+			if 'doctype' in doc and doc.doctype in frappe.hooks.indirect_link:
+				project = frappe.db.get_value(frappe.hooks.indirect_link[doc.doctype]["doctype"], doc[frappe.hooks.indirect_link[doc.doctype]["field"]], "project")
+				if project:
+					doc.project = project
+					frappe.local.form_dict.doc = json.dumps(doc)
 		data = execute_cmd(cmd)
 
 	# data can be an empty string or list which are valid responses
@@ -147,7 +156,11 @@ def uploadfile():
 						"decode": True,
 					}
 				)
-				ret.save()
+				if "File" in frappe.hooks.indirect_link:
+					project = frappe.db.get_value(frappe.form_dict.doctype, frappe.form_dict.docname, "project")
+					if project:
+						ret.project = project
+				ret.save(ignore_permissions=False)
 			except frappe.DuplicateEntryError:
 				# ignore pass
 				ret = None
@@ -218,7 +231,7 @@ def upload_file():
 		is_whitelisted(method)
 		return method()
 	else:
-		return frappe.get_doc(
+		ret = frappe.get_doc(
 			{
 				"doctype": "File",
 				"attached_to_doctype": doctype,
@@ -230,7 +243,13 @@ def upload_file():
 				"is_private": cint(is_private),
 				"content": content,
 			}
-		).save(ignore_permissions=ignore_permissions)
+		)
+		if "File" in frappe.hooks.indirect_link:
+			project = frappe.db.get_value(doctype, docname, "project")
+			if project:
+				ret.project = project
+		ret.save(ignore_permissions=False)
+		return ret
 
 
 @frappe.whitelist(allow_guest=True)

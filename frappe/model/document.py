@@ -20,7 +20,8 @@ from frappe.model.workflow import set_workflow_state_on_action, validate_workflo
 from frappe.utils import cstr, date_diff, file_lock, flt, get_datetime_str, now
 from frappe.utils.data import get_absolute_url
 from frappe.utils.global_search import update_global_search
-
+import uuid
+# from frappe.permissions import get_everest_roles
 
 def get_doc(*args, **kwargs):
 	"""returns a frappe.model.Document object.
@@ -699,6 +700,18 @@ class Document(BaseDocument):
 
 		self._has_access_to[permission_type] = []
 		roles = frappe.get_roles()
+		if 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or hasattr(self, "project")):
+			project = None
+			if hasattr(self, "project"):
+				project = self.project
+			elif 'doctype' in self and self.doctype in frappe.hooks.indirect_link:
+				project_doc = frappe.db.get_value(frappe.hooks.indirect_link[self.doctype]["doctype"], self[frappe.hooks.indirect_link[self.doctype]["field"]], "project")
+				if project_doc:
+					project = project_doc
+			elif self.doctype == "Project":
+				project = self.name
+			if project:
+				perm = frappe.permissions.get_everest_roles(project)
 		for perm in self.get_permissions():
 			if perm.role in roles and perm.get(permission_type):
 				if perm.permlevel not in self._has_access_to[permission_type]:

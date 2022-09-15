@@ -97,6 +97,7 @@ class DatabaseQuery:
 		strict=True,
 		pluck=None,
 		ignore_ddl=False,
+		is_create=False,
 		*,
 		parent_doctype=None,
 	) -> list:
@@ -155,6 +156,7 @@ class DatabaseQuery:
 		self.run = run
 		self.strict = strict
 		self.ignore_ddl = ignore_ddl
+		self.is_create = is_create
 
 		# for contextual user permission check
 		# to determine which user permission is applicable on link field of specific doctype
@@ -242,17 +244,76 @@ class DatabaseQuery:
 
 		# left join link tables
 		for link in self.link_tables:
-			args.tables += f" {self.join} `tab{link.doctype}` on (`tab{link.doctype}`.`name` = {self.tables[0]}.`{link.fieldname}`)"
+			args.tables += f" {self.join} `tab{link.doctype}` as `tab{link.doctype}_{link.t_count}` on (`tab{link.doctype}_{link.t_count}`.`{link.linkfield}` = {link.fieldname.split(' as ')[0]})"
 
 		if self.grouped_or_conditions:
 			self.conditions.append(f"({' or '.join(self.grouped_or_conditions)})")
 
 		args.conditions = " and ".join(self.conditions)
+		user = frappe.session.user
+		if user != "Administrator" and self.is_create and self.doctype == "Project":
+			projects = frappe.db.sql("""
+					select
+						project.name
+					from
+						`tabProject` as project
+					inner join
+						`tabProject Role User Assignment` as project_user_assign
+					on
+						project.name = project_user_assign.parent
+					inner join
+						`tabPermission Scheme Assignment` as perm_scheme
+					on
+						perm_scheme.assignee = project_user_assign.project_role
+						and perm_scheme.type = 'Project Role'
+					where
+						project_user_assign.user = %(user)s and
+						perm_scheme.role in (select role from `tabCustom DocPerm` where parent='Work Item' and `create`=1)
+
+					union
+
+					select
+						test_project.name as project from `tabProject` as test_project
+					inner join
+						`tabPermission Scheme Assignment` as perm_scheme
+					on
+						perm_scheme.parent = test_project.permission_scheme
+						and perm_scheme.type = 'User'
+					where
+						perm_scheme.assignee = %(user)s and
+						perm_scheme.role in (select role from `tabCustom DocPerm` where parent='Work Item' and `create`=1)
+
+					union
+
+					select
+							project.name as project
+						from
+							`tabUser Multiselect` as um
+						join
+							`tabProject Role` as pr
+						on
+							um.parent=pr.name
+						join
+							`tabPermission Scheme Assignment` as psa
+						on
+							pr.name=psa.assignee
+						join
+							`tabProject` as project
+						on
+							psa.parent=project.permission_scheme
+						where
+							um.user=%(user)s and
+							psa.role in (select role from `tabCustom DocPerm` where parent='Work Item' and `create`=1)
+
+			""",{"user": user})
+			projects = ["'{0}'".format(i[0]) for i in projects]
+			args.conditions += " and (`tab{0}`.name in ({1}))".format(self.doctype, ','.join(projects))
 
 		if self.or_conditions:
 			args.conditions += (" or " if args.conditions else "") + " or ".join(self.or_conditions)
 
-		self.set_field_tables()
+		if not ('everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or self.doctype in frappe.hooks.indirect_link)):
+			self.set_field_tables()
 		self.cast_name_fields()
 
 		fields = []
@@ -303,19 +364,32 @@ class DatabaseQuery:
 
 	def parse_args(self):
 		"""Convert fields and filters from strings to list, dicts"""
+		sql_functions = [
+			"dayofyear(",
+			"extract(",
+			"locate(",
+			"strpos(",
+			"count(",
+			"sum(",
+			"avg(",
+		]
 		if isinstance(self.fields, str):
 			if self.fields == "*":
-				self.fields = ["*"]
+    			#self.fields = ["*"]
+				self.fields = frappe.db.get_table_columns(self.doctype)
 			else:
 				try:
 					self.fields = json.loads(self.fields)
 				except ValueError:
 					self.fields = [f.strip() for f in self.fields.split(",")]
+		elif isinstance(self.fields, list) and self.fields[0] == "*":
+			self.fields = frappe.db.get_table_columns(self.doctype)
 
 		# remove empty strings / nulls in fields
 		self.fields = [f for f in self.fields if f]
 
 		# convert child_table.fieldname to `tabChild DocType`.`fieldname`
+		table_count = 0
 		for field in self.fields:
 			if "." in field and "tab" not in field:
 				original_field = field
@@ -326,11 +400,42 @@ class DatabaseQuery:
 				linked_field = frappe.get_meta(self.doctype).get_field(linked_fieldname)
 				linked_doctype = linked_field.options
 				if linked_field.fieldtype == "Link":
-					self.append_link_table(linked_doctype, linked_fieldname)
-				field = f"`tab{linked_doctype}`.`{fieldname}`"
+					self.append_link_table(linked_doctype, linked_fieldname, table_count, "name")
+				field = f"`tab{linked_doctype}_{table_count}`.`{fieldname}`"
 				if alias:
-					field = f"{field} as {alias}"
+					field = f"{field} as `{alias}`"
+				if linked_field.fieldtype == "Table":
+					self.append_link_table(linked_doctype, f"`tab{self.doctype}`.`name`", table_count, "parent")
+					child_linked_field = frappe.get_meta(linked_doctype).get_field(fieldname)
+					child_linked_doctype = child_linked_field.options
+					if child_linked_field.fieldtype == "Link":
+						self.append_link_table(child_linked_doctype, f"`tab{linked_doctype}_{table_count}`.`{fieldname}`", table_count, "name")
+						title = get_doctype_title(child_linked_doctype)
+						field += f", `tab{child_linked_doctype}_{table_count}`.`{title}` as `{fieldname}_title`"
 				self.fields[self.fields.index(original_field)] = field
+				table_count += 1
+			elif "tab" not in field and not any(x for x in sql_functions if x in field):
+				actual_field = field
+				if field[0] == '`':
+					field = field[1:]
+				if field[-1] == '`':
+					field = field[:-1]
+				original_field = field
+				alias = None
+				if " as " in field:
+					field, alias = field.split(" as ")
+				field = f"`tab{self.doctype}`.`{field}` as `{alias or original_field}`"
+				linked_field = {}
+				if frappe.db.get_value("DocType", self.doctype):
+					linked_field = frappe.get_meta(self.doctype).get_field(original_field)
+				if hasattr(linked_field, "fieldtype") and linked_field.fieldtype == "Link" and hasattr(linked_field, "options") and 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or self.doctype in frappe.hooks.indirect_link):
+					linked_doctype = linked_field.options
+					self.append_link_table(linked_doctype, field, table_count, "name")
+					title = get_doctype_title(linked_doctype)
+					field = f"`tab{linked_doctype}_{table_count}`.`name` as `{alias or original_field}`, `tab{linked_doctype}_{table_count}`.`{title}` as `{alias or original_field}_title`"
+					table_count += 1
+				self.fields[self.fields.index(actual_field)] = field
+
 
 		for filter_name in ["filters", "or_filters"]:
 			filters = getattr(self, filter_name)
@@ -429,7 +534,8 @@ class DatabaseQuery:
 					continue
 
 				table_name = field.split(".")[0]
-
+				if (table_name[-1] == "`" and table_name[-2].isnumeric()) or table_name[-1].isnumeric():
+					continue
 				if table_name.lower().startswith("group_concat("):
 					table_name = table_name[13:]
 				if not table_name[0] == "`":
@@ -444,14 +550,26 @@ class DatabaseQuery:
 		doctype = table_name[4:-1]
 		self.check_read_permission(doctype)
 
-	def append_link_table(self, doctype, fieldname):
-		for d in self.link_tables:
-			if d.doctype == doctype and d.fieldname == fieldname:
-				return
-
+	def append_link_table(self, doctype, fieldname, table_count, linkfield):
+		if not ('everest' in frappe.get_installed_apps() and frappe.db.get_value("DocType", doctype, "Module") == "Everest" or self.doctype in frappe.hooks.indirect_link):
+			for d in self.link_tables:
+				if d.doctype == doctype and d.fieldname == fieldname:
+					return
 		self.check_read_permission(doctype)
+		if doctype[0] == '`':
+			doctype == doctype[1:]
+		if doctype[-1] == '`':
+			doctype == doctype[:-1]
+		if doctype.startswith('tab'):
+			doctype == doctype[3:]
+		if fieldname[0] == '`':
+			fieldname == fieldname[1:]
+		if fieldname[-1] == '`':
+			fieldname == fieldname[:-1]
+		if fieldname.startswith('tab'):
+			fieldname == fieldname[3:]
 		self.link_tables.append(
-			frappe._dict(doctype=doctype, fieldname=fieldname, table_name=f"`tab{doctype}`")
+			frappe._dict(doctype=doctype, fieldname=fieldname, table_name=f"`tab{doctype}`", t_count=table_count, linkfield=linkfield)
 		)
 
 	def check_read_permission(self, doctype):
@@ -1134,3 +1252,14 @@ def requires_owner_constraint(role_permissions):
 	# not checking if either select or read if present in if_owner_perms
 	# because either of those is required to perform a query
 	return True
+
+def get_doctype_title(doctype):
+	title_field = frappe.db.get_value("DocType", doctype, "title_field")
+	title = ""
+	if frappe.db.get_value("DocField", {"parent": doctype, "fieldname":"title"}):
+		title = "title"
+	elif title_field:
+		title = title_field
+	else:
+		title = "name"
+	return title

@@ -30,6 +30,19 @@ def get_workflow_name(doctype):
 
 	return workflow_name
 
+def get_dynamic_worklow(doc):
+	if hasattr(doc, 'project') and hasattr(doc, 'type'):
+		project = frappe.get_doc('Project', doc.project)
+		workflow_scheme = frappe.get_doc("Workflow Scheme",project.workflow_scheme)
+		workflow_mapping = workflow_scheme.mapping
+		for mapping in workflow_mapping :
+			workflow_map = frappe.get_doc("Workflow Issue Type Mapping",mapping.workflow_mapping)
+			if(workflow_map.work_item_type == doc.type):
+				return frappe.get_doc('Workflow', workflow_map.workflow)
+
+		return frappe.get_doc('Workflow', get_workflow_name(doc.doctype))
+	else :
+		return frappe.get_doc('Workflow', get_workflow_name(doc.doctype))
 
 @frappe.whitelist()
 def get_transitions(doc, workflow=None, raise_exception=False):
@@ -42,10 +55,13 @@ def get_transitions(doc, workflow=None, raise_exception=False):
 	doc.load_from_db()
 
 	frappe.has_permission(doc, "read", throw=True)
+	if not frappe.has_permission(doc, 'write', throw=False):
+		return []
 	roles = frappe.get_roles()
 
 	if not workflow:
-		workflow = get_workflow(doc.doctype)
+		# workflow = get_workflow(doc.doctype)
+		workflow = get_dynamic_worklow(doc)
 	current_state = doc.get(workflow.workflow_state_field)
 
 	if not current_state:
@@ -92,7 +108,8 @@ def is_transition_condition_satisfied(transition, doc):
 def apply_workflow(doc, action):
 	"""Allow workflow action on the current doc"""
 	doc = frappe.get_doc(frappe.parse_json(doc))
-	workflow = get_workflow(doc.doctype)
+	workflow = get_dynamic_worklow(doc)
+	#workflow = get_workflow(doc.doctype)
 	transitions = get_transitions(doc, workflow)
 	user = frappe.session.user
 
@@ -153,7 +170,8 @@ def validate_workflow(doc):
 	- Check if user is allowed to edit in current state
 	- Check if user is allowed to transition to the next state (if changed)
 	"""
-	workflow = get_workflow(doc.doctype)
+	# workflow = get_workflow(doc.doctype)
+	workflow = get_dynamic_worklow(doc)
 
 	current_state = None
 	if getattr(doc, "_doc_before_save", None):

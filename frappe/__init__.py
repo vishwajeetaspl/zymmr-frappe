@@ -1189,6 +1189,22 @@ def get_doc(*args, **kwargs) -> "Document":
 
 	doc = frappe.model.document.get_doc(*args, **kwargs)
 
+	import frappe.desk.form.load
+	frappe.desk.form.load.run_onload(doc)
+
+	if doc.doctype in frappe.hooks.indirect_link:
+		project = frappe.db.get_value(frappe.hooks.indirect_link[doc.doctype]["doctype"], doc.get(frappe.hooks.indirect_link[doc.doctype]["field"]), "project")
+		if project:
+			doc.project = project
+
+	if doc.doctype in ["Project"] and not doc.has_permission("read"):
+		frappe.flags.error_message = _("Insufficient Permission for {0}").format(
+			frappe.bold(doc.doctype + " " + doc.name)
+		)
+		raise frappe.PermissionError(("read", doc.doctype, doc.name))
+
+	doc.apply_fieldlevel_read_permissions()
+
 	# Replace cache
 	if key := can_cache_doc(args):
 		if key in local.document_cache:
