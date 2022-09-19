@@ -43,7 +43,7 @@ def add_comment(
 	)
 	indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
 	if comment.doctype in indirect_link:
-		project = frappe.db.get_value(indirect_link[comment.doctype]["doctype"], comment.get(indirect_link[comment.doctype]["field"]), "project")
+		project = frappe.db.get_value(indirect_link[comment.doctype]["doctype"][0], comment.get(indirect_link[comment.doctype]["field"][0]), "project")
 		if project:
 			comment.project = project
 	comment.insert(ignore_permissions=False)

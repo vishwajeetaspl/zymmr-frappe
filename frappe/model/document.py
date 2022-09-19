@@ -435,6 +435,10 @@ class Document(BaseDocument):
 		if self.flags.name_set and not force:
 			return
 
+		if self.doctype in ["User"] and not frappe.db.get_value("DocType", self.doctype, "istable"):
+			self.name = str(uuid.uuid4())
+			return
+
 		# If autoname has set as Prompt (name)
 		if self.get("__newname"):
 			self.name = validate_name(self.doctype, self.get("__newname"))
@@ -706,7 +710,7 @@ class Document(BaseDocument):
 			if hasattr(self, "project"):
 				project = self.project
 			elif 'doctype' in self and self.doctype in indirect_link:
-				project_doc = frappe.db.get_value(indirect_link[self.doctype]["doctype"], self[indirect_link[self.doctype]["field"]], "project")
+				project_doc = frappe.db.get_value(indirect_link[self.doctype]["doctype"][0], self[indirect_link[self.doctype]["field"][0]], "project")
 				if project_doc:
 					project = project_doc
 			elif self.doctype == "Project":

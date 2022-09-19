@@ -231,7 +231,7 @@ def get_doc_permissions(doc, user=None, ptype=None):
 		if hasattr(doc, "project"):
 			project = doc.project
 		elif 'doctype' in doc.as_dict() and doc.doctype in indirect_link:
-			project_doc = frappe.db.get_value(indirect_link[doc.doctype]["doctype"], doc[indirect_link[doc.doctype]["field"]], "project")
+			project_doc = frappe.db.get_value(indirect_link[doc.doctype]["doctype"][0], doc[indirect_link[doc.doctype]["field"][0]], "project")
 			if project_doc:
 				project = project_doc
 		elif doc.doctype == "Project":
