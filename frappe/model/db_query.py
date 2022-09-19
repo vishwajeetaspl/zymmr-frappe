@@ -311,8 +311,8 @@ class DatabaseQuery:
 
 		if self.or_conditions:
 			args.conditions += (" or " if args.conditions else "") + " or ".join(self.or_conditions)
-
-		if not ('everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or self.doctype in frappe.hooks.indirect_link)):
+		indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+		if not ('everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or self.doctype in indirect_link)):
 			self.set_field_tables()
 		self.cast_name_fields()
 
@@ -374,7 +374,7 @@ class DatabaseQuery:
 			"avg(",
 		]
 		if isinstance(self.fields, str):
-			if self.fields == "*":
+			if self.fields == "*" or self.fields == '["*"]':
     			#self.fields = ["*"]
 				self.fields = frappe.db.get_table_columns(self.doctype)
 			else:
@@ -428,7 +428,8 @@ class DatabaseQuery:
 				linked_field = {}
 				if frappe.db.get_value("DocType", self.doctype):
 					linked_field = frappe.get_meta(self.doctype).get_field(original_field)
-				if hasattr(linked_field, "fieldtype") and linked_field.fieldtype == "Link" and hasattr(linked_field, "options") and 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or self.doctype in frappe.hooks.indirect_link):
+				indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+				if hasattr(linked_field, "fieldtype") and linked_field.fieldtype == "Link" and hasattr(linked_field, "options") and 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or self.doctype in indirect_link):
 					linked_doctype = linked_field.options
 					self.append_link_table(linked_doctype, field, table_count, "name")
 					title = get_doctype_title(linked_doctype)
@@ -551,7 +552,8 @@ class DatabaseQuery:
 		self.check_read_permission(doctype)
 
 	def append_link_table(self, doctype, fieldname, table_count, linkfield):
-		if not ('everest' in frappe.get_installed_apps() and frappe.db.get_value("DocType", doctype, "Module") == "Everest" or self.doctype in frappe.hooks.indirect_link):
+		indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+		if not ('everest' in frappe.get_installed_apps() and frappe.db.get_value("DocType", doctype, "Module") == "Everest" or self.doctype in indirect_link):
 			for d in self.link_tables:
 				if d.doctype == doctype and d.fieldname == fieldname:
 					return

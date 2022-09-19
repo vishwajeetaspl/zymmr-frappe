@@ -46,8 +46,9 @@ def handle():
 		if 'doc' in frappe.local.form_dict:
 			doc = json.loads(frappe.local.form_dict.doc or {})
 			doc = frappe._dict(doc)
-			if 'doctype' in doc and doc.doctype in frappe.hooks.indirect_link:
-				project = frappe.db.get_value(frappe.hooks.indirect_link[doc.doctype]["doctype"], doc[frappe.hooks.indirect_link[doc.doctype]["field"]], "project")
+			indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+			if 'doctype' in doc and doc.doctype in indirect_link:
+				project = frappe.db.get_value(indirect_link[doc.doctype]["doctype"], doc[indirect_link[doc.doctype]["field"]], "project")
 				if project:
 					doc.project = project
 					frappe.local.form_dict.doc = json.dumps(doc)
@@ -156,7 +157,8 @@ def uploadfile():
 						"decode": True,
 					}
 				)
-				if "File" in frappe.hooks.indirect_link:
+				indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+				if "File" in indirect_link:
 					project = frappe.db.get_value(frappe.form_dict.doctype, frappe.form_dict.docname, "project")
 					if project:
 						ret.project = project
@@ -244,7 +246,8 @@ def upload_file():
 				"content": content,
 			}
 		)
-		if "File" in frappe.hooks.indirect_link:
+		indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+		if "File" in indirect_link:
 			project = frappe.db.get_value(doctype, docname, "project")
 			if project:
 				ret.project = project

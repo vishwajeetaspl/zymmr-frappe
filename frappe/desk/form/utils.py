@@ -41,8 +41,9 @@ def add_comment(
 			"content": extract_images_from_html(reference_doc, content, is_private=True),
 		}
 	)
-	if comment.doctype in frappe.hooks.indirect_link:
-		project = frappe.db.get_value(frappe.hooks.indirect_link[comment.doctype]["doctype"], comment.get(frappe.hooks.indirect_link[comment.doctype]["field"]), "project")
+	indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+	if comment.doctype in indirect_link:
+		project = frappe.db.get_value(indirect_link[comment.doctype]["doctype"], comment.get(indirect_link[comment.doctype]["field"]), "project")
 		if project:
 			comment.project = project
 	comment.insert(ignore_permissions=False)

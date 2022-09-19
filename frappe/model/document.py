@@ -702,10 +702,11 @@ class Document(BaseDocument):
 		roles = frappe.get_roles()
 		if 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or hasattr(self, "project")):
 			project = None
+			indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
 			if hasattr(self, "project"):
 				project = self.project
-			elif 'doctype' in self and self.doctype in frappe.hooks.indirect_link:
-				project_doc = frappe.db.get_value(frappe.hooks.indirect_link[self.doctype]["doctype"], self[frappe.hooks.indirect_link[self.doctype]["field"]], "project")
+			elif 'doctype' in self and self.doctype in indirect_link:
+				project_doc = frappe.db.get_value(indirect_link[self.doctype]["doctype"], self[indirect_link[self.doctype]["field"]], "project")
 				if project_doc:
 					project = project_doc
 			elif self.doctype == "Project":

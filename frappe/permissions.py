@@ -227,10 +227,11 @@ def get_doc_permissions(doc, user=None, ptype=None):
 	if 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", doc.doctype, "Module") == "Everest" or hasattr(doc, "project")):
 		perm = []
 		project = None
+		indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
 		if hasattr(doc, "project"):
 			project = doc.project
-		elif 'doctype' in doc.as_dict() and doc.doctype in frappe.hooks.indirect_link:
-			project_doc = frappe.db.get_value(frappe.hooks.indirect_link[doc.doctype]["doctype"], doc[frappe.hooks.indirect_link[doc.doctype]["field"]], "project")
+		elif 'doctype' in doc.as_dict() and doc.doctype in indirect_link:
+			project_doc = frappe.db.get_value(indirect_link[doc.doctype]["doctype"], doc[indirect_link[doc.doctype]["field"]], "project")
 			if project_doc:
 				project = project_doc
 		elif doc.doctype == "Project":

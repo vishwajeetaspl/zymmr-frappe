@@ -1191,9 +1191,9 @@ def get_doc(*args, **kwargs) -> "Document":
 
 	import frappe.desk.form.load
 	frappe.desk.form.load.run_onload(doc)
-
-	if doc.doctype in frappe.hooks.indirect_link:
-		project = frappe.db.get_value(frappe.hooks.indirect_link[doc.doctype]["doctype"], doc.get(frappe.hooks.indirect_link[doc.doctype]["field"]), "project")
+	indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+	if doc.doctype in indirect_link:
+		project = frappe.db.get_value(indirect_link[doc.doctype]["doctype"], doc.get(indirect_link[doc.doctype]["field"]), "project")
 		if project:
 			doc.project = project
 
