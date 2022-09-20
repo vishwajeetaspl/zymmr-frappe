@@ -436,8 +436,9 @@ class Document(BaseDocument):
 			return
 
 		if self.doctype in ["User"] and not frappe.db.get_value("DocType", self.doctype, "istable"):
-			self.name = str(uuid.uuid4())
-			return
+			if self.doctype == "User" and self.name not in ["Administrator", "Guest"]:
+				self.name = str(uuid.uuid4())
+				return
 
 		# If autoname has set as Prompt (name)
 		if self.get("__newname"):
