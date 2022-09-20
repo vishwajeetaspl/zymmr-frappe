@@ -199,6 +199,7 @@ def update_user_name(args):
 		)
 		doc.flags.no_welcome_mail = True
 		doc.insert()
+		args["name"] = doc.name
 		frappe.flags.mute_emails = _mute_emails
 		update_password(args.get("email"), args.get("password"))
 
