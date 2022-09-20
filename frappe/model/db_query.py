@@ -414,7 +414,7 @@ class DatabaseQuery:
 						field += f", `tab{child_linked_doctype}_{table_count}`.`{title}` as `{fieldname}_title`"
 				self.fields[self.fields.index(original_field)] = field
 				table_count += 1
-			elif "tab" not in field and not any(x for x in sql_functions if x in field):
+			elif "tab" not in field and not any(x for x in sql_functions if x in field.lower()):
 				actual_field = field
 				if field[0] == '`':
 					field = field[1:]
