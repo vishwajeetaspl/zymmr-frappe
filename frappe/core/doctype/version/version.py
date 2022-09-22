@@ -36,7 +36,7 @@ class Version(Document):
 		data = {
 			"creation": doc.creation,
 			"updater_reference": updater_reference,
-			"created_by": doc.owner,
+			"created_by": frappe.db.get_value("User", doc.owner,"full_name")
 		}
 		self.ref_doctype = doc.doctype
 		self.docname = doc.name
@@ -112,6 +112,10 @@ def get_diff(old, new, for_child=False):
 			if df.fieldtype not in blacklisted_fields:
 				old_value = old.get_formatted(df.fieldname) if old_value else old_value
 				new_value = new.get_formatted(df.fieldname) if new_value else new_value
+
+			if df.fieldtype == "Link" and df.options == "User":
+				old_value = frappe.db.get_value("User", old_value,"full_name") or old_value
+				new_value = frappe.db.get_value("User", new_value ,"full_name") or new_value
 
 			if old_value != new_value:
 				out.changed.append((df.fieldname, old_value, new_value))
