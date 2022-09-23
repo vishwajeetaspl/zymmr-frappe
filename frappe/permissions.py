@@ -230,11 +230,11 @@ def get_doc_permissions(doc, user=None, ptype=None):
 		indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
 		if hasattr(doc, "project"):
 			project = doc.project
-		elif 'doctype' in doc.as_dict() and doc.doctype in indirect_link:
+		elif hasattr(doc, "doctype") and doc.doctype in indirect_link:
 			project_doc = frappe.db.get_value(indirect_link[doc.doctype]["doctype"][0], doc[indirect_link[doc.doctype]["field"][0]], "project")
 			if project_doc:
 				project = project_doc
-		elif doc.doctype == "Project":
+		elif hasattr(doc, "doctype") and doc.doctype == "Project":
 			project = doc.name
 		if project:
 			perm = get_everest_roles(project, user)
