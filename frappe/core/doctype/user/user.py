@@ -622,6 +622,7 @@ class User(Document):
 			or_filters.append({"mobile_no": user_name})
 		if login_with_username:
 			or_filters.append({"username": user_name})
+		or_filters.append({"email": user_name})
 
 		users = frappe.get_all("User", fields=["name", "enabled"], or_filters=or_filters, limit=1)
 		if not users:
