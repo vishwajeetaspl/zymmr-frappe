@@ -30,7 +30,7 @@ from frappe.query_builder import (
 )
 from frappe.utils.caching import request_cache
 from frappe.utils.data import cstr, sbool
-
+import frappe
 # Local application imports
 from .exceptions import *
 from .utils.jinja import (
@@ -383,7 +383,8 @@ def errprint(msg: str) -> None:
 	if not request or (not "cmd" in local.form_dict) or conf.developer_mode:
 		print(msg)
 
-	error_log.append({"exc": msg})
+	if frappe.get_conf().developer_mode:
+		error_log.append({"exc": msg})
 
 
 def print_sql(enable: bool = True) -> None:
