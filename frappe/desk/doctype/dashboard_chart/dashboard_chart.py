@@ -278,6 +278,10 @@ def get_group_by_chart_config(chart, filters):
 	value_field = chart.aggregate_function_based_on or "1"
 	group_by_field = chart.group_by_based_on
 	doctype = chart.document_type
+	field_meta = frappe.get_meta(doctype).get_field(group_by_field)
+	is_link = False
+	if field_meta.fieldtype == "Link":
+		is_link = True
 
 	data = frappe.db.get_list(
 		doctype,
@@ -292,7 +296,9 @@ def get_group_by_chart_config(chart, filters):
 		order_by="count desc",
 		ignore_ifnull=True,
 	)
-
+	if is_link:
+		for i in range(len(data)):
+			data[i].name = data[i].name_title
 	if data:
 		if chart.number_of_groups and chart.number_of_groups < len(data):
 			other_count = 0

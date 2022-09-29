@@ -21,6 +21,11 @@ from frappe.utils import add_user_info, cstr, format_duration
 @frappe.read_only()
 def get():
 	args = get_form_params()
+	if 'filters' in args:
+		for i in args.filters:
+			field_meta = frappe.get_meta(args.doctype).get_field(i)
+			if field_meta.fieldtype == "Link" and field_meta.options == 'User' and args['filters'][i][-1] == 'Current User':
+				args['filters'][i][-1] = frappe.session.user
 	# If virtual doctype get data from controller het_list method
 	if is_virtual_doctype(args.doctype):
 		controller = get_controller(args.doctype)
