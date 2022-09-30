@@ -21,7 +21,7 @@ from frappe.utils import add_user_info, cstr, format_duration
 @frappe.read_only()
 def get():
 	args = get_form_params()
-	if 'filters' in args:
+	if 'filters' in args and type(args.filters) is dict:
 		for i in args.filters:
 			field_meta = frappe.get_meta(args.doctype).get_field(i)
 			if field_meta.fieldtype == "Link" and field_meta.options == 'User' and args['filters'][i][-1] == 'Current User':
