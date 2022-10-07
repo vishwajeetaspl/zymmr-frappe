@@ -207,7 +207,7 @@ def get_everest_roles(project, user=None):
 		where
 			um.user=%(user)s and project.name = %(project)s
 			''',
-		{"user": frappe.session.user, "project": project}, as_dict = 1
+		{"user": user, "project": project}, as_dict = 1
 	)
 	for d in role_list:
 		roles.append(d.rolename)
@@ -231,7 +231,7 @@ def get_doc_permissions(doc, user=None, ptype=None):
 		if hasattr(doc, "project"):
 			project = doc.project
 		elif hasattr(doc, "doctype") and doc.doctype in indirect_link:
-			project_doc = frappe.db.get_value(indirect_link[doc.doctype]["doctype"][0], doc[indirect_link[doc.doctype]["field"][0]], "project")
+			project_doc = frappe.db.get_value(indirect_link[doc.doctype]["doctype"][0], doc.get(indirect_link[doc.doctype]["field"][0]), "project")
 			if project_doc:
 				project = project_doc
 		elif hasattr(doc, "doctype") and doc.doctype == "Project":
