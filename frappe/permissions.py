@@ -160,6 +160,8 @@ def get_everest_roles(project, user=None):
 	if not user:
 		user = frappe.session.user
 	roles = []
+	if user == "Administrator":
+		return [i.name for i in frappe.db.get_list("Role", {'disabled':0})]
 	role_list = frappe.db.sql('''
 		select
 			perm_scheme.role as rolename
@@ -211,6 +213,17 @@ def get_everest_roles(project, user=None):
 	)
 	for d in role_list:
 		roles.append(d.rolename)
+	table = DocType("Has Role")
+	default_roles = (
+		frappe.qb.from_(table)
+		.where((table.parent == user) & (table.role.notin(["All", "Guest"])))
+		.select(table.role)
+		.run(pluck=True)
+	)
+	print(default_roles)
+	for i in default_roles:
+		roles.append(i)
+
 	# roles.append('All')
 	# roles.append('Guest')
 	return roles
