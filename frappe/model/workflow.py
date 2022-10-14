@@ -34,15 +34,16 @@ def get_dynamic_worklow(doc):
 	if hasattr(doc, 'project') and hasattr(doc, 'type'):
 		project = frappe.get_doc('Project', doc.project)
 		workflow_scheme = frappe.get_doc("Workflow Scheme",project.workflow_scheme)
-		workflow_mapping = workflow_scheme.mapping
-		for mapping in workflow_mapping :
-			workflow_map = frappe.get_doc("Workflow Issue Type Mapping",mapping.workflow_mapping)
-			if(workflow_map.work_item_type == doc.type):
-				return frappe.get_doc('Workflow', workflow_map.workflow)
+		if workflow_scheme:
+			workflow_mapping = workflow_scheme.mapping
+			for mapping in workflow_mapping :
+				workflow_map = frappe.get_doc("Workflow Issue Type Mapping",mapping.workflow_mapping)
+				if(workflow_map.work_item_type == doc.type):
+					return frappe.get_doc('Workflow', workflow_map.workflow)
+			if workflow_scheme.default_workflow:
+				return frappe.get_doc('Workflow', workflow_scheme.default_workflow)
 
-		return frappe.get_doc('Workflow', get_workflow_name(doc.doctype))
-	else :
-		return frappe.get_doc('Workflow', get_workflow_name(doc.doctype))
+	return frappe.get_doc('Workflow', get_workflow_name(doc.doctype))
 
 @frappe.whitelist()
 def get_transitions(doc, workflow=None, raise_exception=False):
