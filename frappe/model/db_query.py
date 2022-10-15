@@ -424,6 +424,7 @@ class DatabaseQuery:
 				alias = None
 				if " as " in field:
 					field, alias = field.split(" as ")
+					original_field = field
 				field = f"`tab{self.doctype}`.`{field}` as `{alias or original_field}`"
 				linked_field = {}
 				if frappe.db.get_value("DocType", self.doctype):
