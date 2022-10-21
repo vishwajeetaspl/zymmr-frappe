@@ -14,8 +14,11 @@ pipelines:
               - ssh mneme@20.232.26.254 ". ~/.nvm/nvm.sh && bash ~/CICD/frappe_run.sh"
               - echo frappe deployed!
   custom:
-    frappe-14-build:
+      prod-deploy:
       -   step:
-            script:              
-              - ssh frappe@4.227.227.231 ". ~/.nvm/nvm.sh && bash ~/CICD/frappe_run.sh"
+            script:
+              - apt-get update
+              - apt-get install -y zip
+              - apt-get install sshpass
+              - sshpass -p 'frappe' ssh everest@65.21.55.189 ". ~/.nvm/nvm.sh && bash ~/CICD/frappe_run.sh"
               - echo ssh succeeded
