@@ -6,14 +6,12 @@
 image: atlassian/default-image:3
 
 pipelines:
-  branches:
-    evdev:
-        - step:
-            name: Build and push to server
-            script:
-              - ssh mneme@20.232.26.254 ". ~/.nvm/nvm.sh && bash ~/CICD/frappe_run.sh"
-              - echo frappe deployed!
   custom:
+      dev-deploy:
+      -   step:
+            script:              
+              - ssh frappe@4.227.227.231 ". ~/.nvm/nvm.sh && bash ~/CICD/frappe_run.sh"
+              - echo ssh succeeded
       prod-deploy:
       -   step:
             script:
