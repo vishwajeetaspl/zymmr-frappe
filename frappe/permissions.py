@@ -160,7 +160,7 @@ def get_everest_roles(project, user=None):
 	if not user:
 		user = frappe.session.user
 	roles = []
-	if user == "Administrator":
+	if user == "Administrator" or 'Everest Administrator' in frappe.get_roles():
 		return [i.name for i in frappe.db.get_list("Role", {'disabled':0})]
 	role_list = frappe.db.sql('''
 		select
