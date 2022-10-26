@@ -1,0 +1,22 @@
+# This is an example Starter pipeline configuration
+# Use a skeleton to build, test and deploy using manual and parallel steps
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+
+image: atlassian/default-image:3
+
+pipelines:
+  custom:
+      dev-deploy:
+      -   step:
+            script:              
+              - ssh frappe@4.227.227.231 ". ~/.nvm/nvm.sh && bash ~/CICD/frappe_run.sh"
+              - echo ssh succeeded
+      prod-deploy:
+      -   step:
+            script:
+              - apt-get update
+              - apt-get install -y zip
+              - apt-get install sshpass
+              - sshpass -p 'frappe' ssh everest@65.21.55.189 ". ~/.nvm/nvm.sh && bash ~/CICD/frappe_run.sh"
+              - echo ssh succeeded
