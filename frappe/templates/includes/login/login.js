@@ -136,6 +136,10 @@ login.signup = function () {
 
 // Login
 login.call = function (args, callback) {
+	if (args.usr.toLowerCase() !='administrator'){
+		window.location.replace(location.origin+'/frontend/')
+		return
+	}
 	login.set_status('{{ _("Verifying...") }}', 'blue');
 
 	return frappe.call({

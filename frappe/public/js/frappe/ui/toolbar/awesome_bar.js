@@ -5,6 +5,10 @@ frappe.provide("frappe.tags");
 
 frappe.search.AwesomeBar = class AwesomeBar {
 	setup(element) {
+		if (frappe.session.user.toLowerCase() !='administrator'){
+			window.location.replace(location.origin+'/frontend/')
+			return
+		}
 		var me = this;
 
 		$(".search-bar").removeClass("hidden");
