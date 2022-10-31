@@ -220,7 +220,6 @@ def get_everest_roles(project, user=None):
 		.select(table.role)
 		.run(pluck=True)
 	)
-	print(default_roles)
 	for i in default_roles:
 		roles.append(i)
 
@@ -566,6 +565,8 @@ def get_roles(user=None, with_standard=True):
 
 	# roles = frappe.cache().hget("roles", user, get)
 	roles = get()
+	if "Zymmr Administrator" in roles:
+		roles = frappe.get_all("Role", pluck="name")
 	# filter standard if required
 	if not with_standard:
 		roles = [r for r in roles if r not in ["All", "Guest", "Administrator"]]

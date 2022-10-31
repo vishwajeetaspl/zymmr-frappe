@@ -1213,6 +1213,22 @@ def get_doc(*args, **kwargs) -> "Document":
 
 		if cache().hexists("document_cache", key):
 			cache().hset("document_cache", key, doc.as_dict())
+	if frappe.local.request_ip is not None:
+		from frappe.model.db_query import get_doctype_title
+		field_meta = frappe.get_meta(doc.doctype).fields
+
+		for i in field_meta:
+			if i.fieldtype == 'Link' and hasattr(doc, i.fieldname):
+					title = get_doctype_title(i.options)
+					doc.set(i.fieldname+"_title", frappe.db.get_value(i.options, doc.get(i.fieldname), title) or '')
+
+			elif i.fieldtype == "Table" or i.fieldtype == "TableMultiSelect":
+				child_field_meta = frappe.get_meta(i.options).fields
+				for idx in range(len(doc.get(i.fieldname))):
+					for field in child_field_meta:
+						if field.fieldtype == 'Link' and hasattr(doc.get(i.fieldname)[idx], field.fieldname):
+								title = get_doctype_title(field.options)
+								doc.get(i.fieldname)[idx].set(field.fieldname+"_title", frappe.db.get_value(field.options, doc.get(i.fieldname)[idx].get(field.fieldname), title) or '')
 
 	return doc
 
