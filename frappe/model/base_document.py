@@ -300,14 +300,14 @@ class BaseDocument:
 	) -> dict:
 		d = _dict()
 		columns = self.meta.get_valid_columns()
-		columns_with_title = []
-		field_meta = frappe.get_meta(self.doctype).fields
-		for i in field_meta:
-			columns_with_title.append(i.fieldname)
-			if i.fieldtype == 'Link' and hasattr(self, i.fieldname):
-				columns_with_title.append(i.fieldname+"_title")
+		# columns_with_title = []
+		# field_meta = frappe.get_meta(self.doctype).fields
+		# for i in field_meta:
+		# 	columns_with_title.append(i.fieldname)
+		# 	if i.fieldtype == 'Link' and hasattr(self, i.fieldname):
+		# 		columns_with_title.append(i.fieldname+"_title")
 
-		for fieldname in columns_with_title:
+		for fieldname in columns:
 			# column is valid, we can use getattr
 			d[fieldname] = getattr(self, fieldname, None)
 
