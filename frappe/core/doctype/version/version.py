@@ -114,17 +114,8 @@ def get_diff(old, new, for_child=False):
 				old_value = old.get_formatted(df.fieldname) if old_value else old_value
 				new_value = new.get_formatted(df.fieldname) if new_value else new_value
 
-			if df.fieldtype == "Link":	
-				title_field = get_doctype_title(df.options)
-				old_value = frappe.db.get_value(df.options , old_value , title_field) or old_value
-				if not old_value:
-					old_value = 'Not Specified'
-				new_value = frappe.db.get_value(df.options , new_value , title_field) or new_value
-
 			if df.fieldtype == "Link" and df.options == "User":
 				old_value = frappe.db.get_value("User", old_value,"full_name") or old_value
-				if not old_value:
-					old_value = 'Not Specified'
 				new_value = frappe.db.get_value("User", new_value ,"full_name") or new_value
 
 			if not old_value:
