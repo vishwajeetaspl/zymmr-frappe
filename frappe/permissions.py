@@ -237,7 +237,7 @@ def get_doc_permissions(doc, user=None, ptype=None):
 
 	meta = frappe.get_meta(doc.doctype)
 	if 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", doc.doctype, "Module") == "Everest" or hasattr(doc, "project")):
-		perm = []
+		perm = frappe.get_roles()
 		project = None
 		indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
 		if hasattr(doc, "project"):
