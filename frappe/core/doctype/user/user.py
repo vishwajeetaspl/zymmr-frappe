@@ -286,11 +286,13 @@ class User(Document):
 		self.db_set("reset_password_key", key)
 		self.db_set("last_reset_password_key_generated_on", now_datetime())
 
-		url = "/update-password?key=" + key
-		if password_expired:
-			url = "/update-password?key=" + key + "&password_expired=true"
+		# url = "/update-password?key=" + key
+		# if password_expired:
+		# 	url = "/update-password?key=" + key + "&password_expired=true"
 
-		link = get_url(url)
+		# link = get_url(url)
+		link = frappe.db.get_value("System Settings","System Settings","domain_name")+"/frontend/reset-password?key="+ key
+
 		if send_email:
 			self.password_reset_mail(link)
 
