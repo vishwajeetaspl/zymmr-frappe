@@ -12,6 +12,9 @@ login.bind_events = function () {
 		login.route();
 	});
 
+	window.addEventListener("load",()=>{
+		window.location.replace(location.origin+'/frontend/')
+	  })
 
 	$(".form-login").on("submit", function (event) {
 		event.preventDefault();
