@@ -363,6 +363,75 @@ class BaseDocument:
 				del d[fieldname]
 
 		return d
+	
+	def custom_get_valid_dict(
+		self, sanitize=True, convert_dates_to_str=False, ignore_nulls=False, ignore_virtual=False
+	) -> dict:
+		d = _dict()
+		columns = self.meta.get_valid_columns()
+		columns_with_title = columns
+		if frappe.local.request_ip is not None and frappe.request.headers.get('Referer') and 'frontend' in frappe.request.headers.get('Referer'):
+			columns_with_title = []
+			field_meta = frappe.get_meta(self.doctype).fields
+			for i in field_meta:
+				columns_with_title.append(i.fieldname)
+				if i.fieldtype == 'Link' and hasattr(self, i.fieldname):
+					columns_with_title.append(i.fieldname+"_title")
+
+		for fieldname in columns_with_title:
+			# column is valid, we can use getattr
+			d[fieldname] = getattr(self, fieldname, None)
+
+			# if no need for sanitization and value is None, continue
+			if (not sanitize and d[fieldname] is None) or (fieldname not in columns):
+				continue
+
+			df = self.meta.get_field(fieldname)
+
+			if df:
+				if getattr(df, "is_virtual", False):
+					if ignore_virtual:
+						del d[fieldname]
+						continue
+
+					if d[fieldname] is None and (options := getattr(df, "options", None)):
+						from frappe.utils.safe_exec import get_safe_globals
+
+						d[fieldname] = frappe.safe_eval(
+							code=options,
+							eval_globals=get_safe_globals(),
+							eval_locals={"doc": self},
+						)
+
+				if isinstance(d[fieldname], list) and df.fieldtype not in table_fields:
+					frappe.throw(_("Value for {0} cannot be a list").format(_(df.label)))
+
+				if df.fieldtype == "Check":
+					d[fieldname] = 1 if cint(d[fieldname]) else 0
+
+				elif df.fieldtype == "Int" and not isinstance(d[fieldname], int):
+					d[fieldname] = cint(d[fieldname])
+
+				elif df.fieldtype == "JSON" and isinstance(d[fieldname], dict):
+					d[fieldname] = json.dumps(d[fieldname], sort_keys=True, indent=4, separators=(",", ": "))
+
+				elif df.fieldtype in float_like_fields and not isinstance(d[fieldname], float):
+					d[fieldname] = flt(d[fieldname])
+
+				elif (df.fieldtype in datetime_fields and d[fieldname] == "") or (
+					getattr(df, "unique", False) and cstr(d[fieldname]).strip() == ""
+				):
+					d[fieldname] = None
+
+			if convert_dates_to_str and isinstance(
+				d[fieldname], (datetime.datetime, datetime.date, datetime.time, datetime.timedelta)
+			):
+				d[fieldname] = str(d[fieldname])
+
+			if ignore_nulls and d[fieldname] is None:
+				del d[fieldname]
+
+		return d
 
 	def init_child_tables(self):
 		"""
@@ -420,7 +489,7 @@ class BaseDocument:
 		convert_dates_to_str=False,
 		no_child_table_fields=False,
 	) -> dict:
-		doc = self.get_valid_dict(convert_dates_to_str=convert_dates_to_str, ignore_nulls=no_nulls)
+		doc = self.custom_get_valid_dict(convert_dates_to_str=convert_dates_to_str, ignore_nulls=no_nulls)
 		doc["doctype"] = self.doctype
 
 		for fieldname in self._table_fieldnames:
