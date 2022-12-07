@@ -372,12 +372,14 @@ class BaseDocument:
 		columns_with_title = columns
 		if frappe.local.request_ip is not None and frappe.request.headers.get('Referer') and 'frontend' in frappe.request.headers.get('Referer'):
 			columns_with_title = []
-			field_meta = frappe.get_meta(self.doctype).fields
-			for i in field_meta:
-				columns_with_title.append(i.fieldname)
-				if i.fieldtype == 'Link' and hasattr(self, i.fieldname):
-					columns_with_title.append(i.fieldname+"_title")
-
+			for i in columns:
+				field_meta = frappe.get_meta(self.doctype).get_field(i)
+				if field_meta:
+					columns_with_title.append(field_meta.fieldname)
+					if field_meta.fieldtype == 'Link' and hasattr(self, field_meta.fieldname):
+						columns_with_title.append(field_meta.fieldname+"_title")
+				else:
+					columns_with_title.append(i)
 		for fieldname in columns_with_title:
 			# column is valid, we can use getattr
 			d[fieldname] = getattr(self, fieldname, None)
