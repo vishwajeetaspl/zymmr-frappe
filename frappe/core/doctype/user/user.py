@@ -812,11 +812,16 @@ def _get_user_for_update_password(key, old_password):
 
 
 def reset_user_data(user):
+
+	frappe.db.set_value("User", user, "reset_password_key", '')
+	frappe.db.set_value("User", user, "redirect_url", '')
+	# user_doc = frappe.get_doc("User", user)
+	# redirect_url = frappe.db.get_value("User", user, redirect_url)
 	user_doc = frappe.get_doc("User", user)
 	redirect_url = user_doc.redirect_url
-	user_doc.reset_password_key = ""
-	user_doc.redirect_url = ""
-	user_doc.save(ignore_permissions=True)
+	# user_doc.reset_password_key = ""
+	# user_doc.redirect_url = ""
+	# user_doc.save(ignore_permissions=True)
 
 	return user_doc, redirect_url
 
