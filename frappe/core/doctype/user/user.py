@@ -341,7 +341,7 @@ class User(Document):
 			"new_user",
 			dict(
 				link=link,
-				site_url=get_url(),
+				site_url=frappe.db.get_value("System Settings","System Settings","domain_name"),
 			),
 		)
 
@@ -356,6 +356,7 @@ class User(Document):
 
 		args = {
 			"first_name": self.first_name or self.last_name or "user",
+			"email": self.email,
 			"user": self.name,
 			"title": subject,
 			"login_url": get_url(),
