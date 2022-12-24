@@ -373,18 +373,24 @@ class DatabaseQuery:
 			"sum(",
 			"avg(",
 		]
+		
 		if isinstance(self.fields, str):
 			if self.fields == "*" or self.fields == '["*"]':
-    			#self.fields = ["*"]
+				# self.fields = ["*"]
 				self.fields = frappe.db.get_table_columns(self.doctype)
 			else:
 				try:
 					self.fields = json.loads(self.fields)
 				except ValueError:
 					self.fields = [f.strip() for f in self.fields.split(",")]
-		elif isinstance(self.fields, list) and self.fields[0] == "*":
-			self.fields = frappe.db.get_table_columns(self.doctype)
-
+		elif isinstance(self.fields, list):
+			fields = []
+			for field in self.fields:
+				if field == "*":
+					fields.extend(frappe.db.get_table_columns(self.doctype))
+				else:
+					fields.append(field)
+			self.fields = fields
 		# remove empty strings / nulls in fields
 		self.fields = [f for f in self.fields if f]
 
@@ -400,7 +406,7 @@ class DatabaseQuery:
 				linked_field = frappe.get_meta(self.doctype).get_field(linked_fieldname)
 				linked_doctype = linked_field.options
 				if linked_field.fieldtype == "Link":
-					self.append_link_table(linked_doctype, linked_fieldname, table_count, "name")
+					self.append_link_table(linked_doctype, f"`tab{self.doctype}`.`{linked_doctype}`", table_count, "name")
 				field = f"`tab{linked_doctype}_{table_count}`.`{fieldname}`"
 				if alias:
 					field = f"{field} as `{alias}`"
