@@ -710,7 +710,7 @@ class Document(BaseDocument):
 			indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
 			if hasattr(self, "project"):
 				project = self.project
-			elif 'doctype' in self and self.doctype in indirect_link:
+			elif hasattr(self, "doctype") and self.doctype in indirect_link:
 				project_doc = frappe.db.get_value(indirect_link[self.doctype]["doctype"][0], self.get(indirect_link[self.doctype]["field"][0]), "project")
 				if project_doc:
 					project = project_doc

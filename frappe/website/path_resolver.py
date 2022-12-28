@@ -87,6 +87,11 @@ class PathResolver:
 
 
 def resolve_redirect(path, query_string=None):
+	if "website_script" in path or "login" in path or "app" in path and frappe.session.user != "Administrator":
+		frappe.local.flags.redirect_location = "frontend"
+		raise frappe.Redirect
+
+
 	"""
 	Resolve redirects from hooks
 
