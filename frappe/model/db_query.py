@@ -210,7 +210,6 @@ class DatabaseQuery:
 			%(limit)s"""
 			% args
 		)
-
 		return frappe.db.sql(
 			query,
 			as_dict=not self.as_list,
@@ -395,6 +394,12 @@ class DatabaseQuery:
 		self.fields = [f for f in self.fields if f]
 
 		# convert child_table.fieldname to `tabChild DocType`.`fieldname`
+		updated_order_by = []
+		if self.order_by and frappe.db.get_value("DocType", self.doctype, "Module") == "Everest":
+			for order_by_value in self.order_by.split(","):
+				updated_order_by.append(f"`tab{self.doctype}`.{order_by_value.strip()}")
+			self.order_by = ", ".join(updated_order_by)
+
 		table_count = 0
 		for field in self.fields:
 			if "." in field and "tab" not in field:
