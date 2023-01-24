@@ -397,7 +397,8 @@ class DatabaseQuery:
 		updated_order_by = []
 		if self.order_by and frappe.db.get_value("DocType", self.doctype, "Module") == "Everest":
 			for order_by_value in self.order_by.split(","):
-				updated_order_by.append(f"`tab{self.doctype}`.{order_by_value.strip()}")
+				if "." not in order_by_value:
+					updated_order_by.append(f"`tab{self.doctype}`.{order_by_value.strip()}")
 			self.order_by = ", ".join(updated_order_by)
 
 		table_count = 0
