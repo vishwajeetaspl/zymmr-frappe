@@ -362,6 +362,7 @@ class DatabaseQuery:
 		return args
 
 	def parse_args(self):
+		print(self.__dict__)
 		"""Convert fields and filters from strings to list, dicts"""
 		sql_functions = [
 			"dayofyear(",
@@ -397,7 +398,7 @@ class DatabaseQuery:
 		updated_order_by = []
 		if self.order_by and frappe.db.get_value("DocType", self.doctype, "Module") == "Everest":
 			for order_by_value in self.order_by.split(","):
-				if "." not in order_by_value:
+				if "." not in order_by_value and order_by_value.split(" ")[0] in frappe.get_meta(self.doctype)._valid_columns:
 					updated_order_by.append(f"`tab{self.doctype}`.{order_by_value.strip()}")
 			self.order_by = ", ".join(updated_order_by)
 
