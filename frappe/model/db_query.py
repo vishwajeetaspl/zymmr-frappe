@@ -362,7 +362,6 @@ class DatabaseQuery:
 		return args
 
 	def parse_args(self):
-		print(self.__dict__)
 		"""Convert fields and filters from strings to list, dicts"""
 		sql_functions = [
 			"dayofyear(",
