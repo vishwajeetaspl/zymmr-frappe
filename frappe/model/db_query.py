@@ -399,7 +399,8 @@ class DatabaseQuery:
 			for order_by_value in self.order_by.split(","):
 				if "." not in order_by_value and order_by_value.split(" ")[0] in frappe.get_meta(self.doctype)._valid_columns:
 					updated_order_by.append(f"`tab{self.doctype}`.{order_by_value.strip()}")
-			self.order_by = ", ".join(updated_order_by)
+			if updated_order_by:
+				self.order_by = ", ".join(updated_order_by)
 
 		table_count = 0
 		for field in self.fields:
