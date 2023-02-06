@@ -98,7 +98,7 @@ def validate_fields(data):
 
 	for field in data.fields or []:
 		fieldname = extract_fieldname(field)
-		if is_standard(fieldname):
+		if is_standard(fieldname) or fieldname == "*":
 			continue
 
 		meta, df = get_meta_and_docfield(fieldname, data)
