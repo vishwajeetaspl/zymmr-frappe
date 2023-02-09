@@ -124,6 +124,19 @@ def get_diff(old, new, for_child=False):
 			if old_value != new_value:
 				out.changed.append((df.fieldname, old_value, new_value))
 
+			old_value_title = old_value
+			new_value_title = new_value
+
+			if df.fieldtype == "Link" and df.fieldname != "User":
+				title_field = get_doctype_title(df.options)
+				old_value_title = frappe.db.get_value(df.options , old_value , title_field) or old_value
+				if not old_value:
+					old_value_title = 'Not Specified'
+				new_value_title = frappe.db.get_value(df.options , new_value , title_field) or new_value
+
+			if old_value_title != new_value_title:
+				out[df.fieldname] = [old_value_title, new_value_title]
+
 	# docstatus
 	if not for_child and old.docstatus != new.docstatus:
 		out.changed.append(["docstatus", old.docstatus, new.docstatus])
