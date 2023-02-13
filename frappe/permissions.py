@@ -508,7 +508,7 @@ def get_roles(user=None, with_standard=True):
 
 	def get():
 		if user == "Administrator":
-			return frappe.get_all("Role", pluck="name")  # return all available roles
+			return frappe.get_all("Role",{'disabled':0}, pluck="name")  # return all available roles
 		else:
 			table = DocType("Has Role")
 			roles = (
