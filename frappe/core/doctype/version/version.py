@@ -25,6 +25,9 @@ class Version(Document):
 			self.ref_doctype = new.doctype
 			self.docname = new.name
 			self.data = frappe.as_json(diff, indent=None, separators=(",", ":"))
+			if self.ref_doctype == "Work Item":
+				for row in diff.changed:
+					self.append("version_detail",{"field_name":row[0],"original_value":diff[row[0]][0],"new_value":diff[row[0]][1],"hash_original_value":row[1],"hash_new_value":row[2]})
 			return True
 		else:
 			return False
