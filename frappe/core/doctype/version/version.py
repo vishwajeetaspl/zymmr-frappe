@@ -26,8 +26,50 @@ class Version(Document):
 			self.docname = new.name
 			self.data = frappe.as_json(diff, indent=None, separators=(",", ":"))
 			if self.ref_doctype == "Work Item":
-				for row in diff.changed:
-					self.append("version_detail",{"field_name":row[0],"original_value":diff[row[0]][0],"new_value":diff[row[0]][1],"hash_original_value":row[1],"hash_new_value":row[2]})
+				#field change
+				if diff.changed:
+					for row in diff.changed:
+						self.append("version_detail",{"field_name":row[0],"original_value":diff[row[0]][0],"new_value":diff[row[0]][1],"hash_original_value":row[1],"hash_new_value":row[2]})
+				
+				#table or tablemulti select
+				if diff.added or diff.removed:
+					for row_added in diff.added:
+						doc = frappe.get_meta(row_added[1]['doctype'])
+						for field in doc.fields:
+							if field.fieldname in row_added[1].keys():
+								if field.fieldtype == "Link":
+									title_field = get_doctype_title(field.options)
+									title_value = frappe.db.get_value(field.options , row_added[1][field.fieldname] , title_field)
+									self.append("version_detail",{"is_table":1,"table_field":field.fieldname,"field_name":row_added[0],"new_value":title_value,"hash_new_value":row_added[1][field.fieldname]})
+								else:
+									self.append("version_detail",{"is_table":1,"table_field":field.fieldname,"field_name":row_added[0],"new_value":row_added[1][field.fieldname],"hash_new_value":row_added[1][field.fieldname]})
+					
+
+					for row_added in diff.removed:
+						doc = frappe.get_meta(row_added[1]['doctype'])
+						for field in doc.fields:
+							if field.fieldname in row_added[1].keys():
+								if field.fieldtype == "Link":
+									title_field = get_doctype_title(field.options)
+									title_value = frappe.db.get_value(field.options , row_added[1][field.fieldname] , title_field)
+									self.append("version_detail",{"is_table":1,"table_field":field.fieldname,"field_name":row_added[0],"original_value":title_value,"hash_original_value":row_added[1][field.fieldname]})
+								else:
+									self.append("version_detail",{"is_table":1,"table_field":field.fieldname,"field_name":row_added[0],"original_value":row_added[1][field.fieldname],"hash_original_value":row_added[1][field.fieldname]})
+
+				#table row change
+				if diff.row_changed:
+					for row_added in diff.row_changed:
+						field = frappe.get_meta(frappe.get_meta("Work Item").get_field(row_added[0]).options).get_field(row_added[3][0][0])
+						if field.fieldtype == "Link":
+							if field.options == "User":
+								self.append("version_detail",{"is_table":1,"table_field":row_added[0],"field_name":row_added[3][0][0],"original_value":row_added[3][0][1],"new_value":row_added[3][0][2],"hash_original_value":frappe.db.get_value("User", {"full_name":row_added[3][0][1]},"name"),"hash_new_value":frappe.db.get_value("User", {"full_name":row_added[3][0][2]},"name")})
+							else:
+								title_field = get_doctype_title(field.options)
+								self.append("version_detail",{"is_table":1,"table_field":row_added[0],"field_name":row_added[3][0][0],"original_value":row_added[3][0][1],"new_value":row_added[3][0][2],"hash_original_value":frappe.db.get_value(field.options , row_added[3][0][1] , title_field),"hash_new_value":frappe.db.get_value(field.options , row_added[3][0][2] , title_field)})
+						else:
+							self.append("version_detail",{"is_table":1,"table_field":row_added[0],"field_name":row_added[3][0][0],"original_value":row_added[3][0][1],"new_value":row_added[3][0][2],"hash_original_value":row_added[3][0][1],"hash_new_value":row_added[3][0][2]})
+
+	
 			return True
 		else:
 			return False
