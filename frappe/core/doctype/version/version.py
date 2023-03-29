@@ -83,7 +83,7 @@ def get_diff(old, new, for_child=False):
 	)
 
 	for df in new.meta.fields:
-		if df.fieldtype in no_value_fields and df.fieldtype not in table_fields:
+		if df.fieldtype in no_value_fields and df.fieldtype not in table_fields or df.ignore_version:
 			continue
 
 		old_value, new_value = old.get(df.fieldname), new.get(df.fieldname)

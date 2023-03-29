@@ -77,7 +77,8 @@
   "on_create_workitem",
   "on_edit_workitem",
   "on_create_project",
-  "on_edit_project"
+  "on_edit_project",
+  "ignore_version"
  ],
  "fields": [
   {
@@ -587,13 +588,19 @@
    "fieldtype": "Check",
    "label": "On Edit Project",
    "options": "On Edit Project"
+  },
+  {
+   "default": "0",
+   "fieldname": "ignore_version",
+   "fieldtype": "Check",
+   "label": "Ignore Version"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-09-14 11:20:31.818917",
+ "modified": "2023-03-29 13:55:11.976894",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",
