@@ -965,7 +965,7 @@ class BaseDocument:
 		if frappe.flags.in_install:
 			return
 
-		if self.meta.issingle:
+		if self.meta.get("issingle"):
 			# single doctype value type is mediumtext
 			return
 
