@@ -308,7 +308,7 @@ def get_role_permissions(doctype_meta, user=None, is_owner=None):
 
 	cache_key = (doctype_meta.name, user)
 
-	if user == "Administrator":
+	if user == "Administrator" or "Zymmr Administrator" in frappe.get_roles():
 		return allow_everything()
 
 	if not frappe.local.role_permissions.get(cache_key):
