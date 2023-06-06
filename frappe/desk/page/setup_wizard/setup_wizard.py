@@ -201,7 +201,7 @@ def update_user_name(args):
 		doc.insert()
 		args["name"] = doc.name
 		frappe.flags.mute_emails = _mute_emails
-		update_password(args.get("email"), args.get("password"))
+		update_password(args["name"], args.get("password"))
 
 	elif first_name:
 		args.update({"name": frappe.session.user, "first_name": first_name, "last_name": last_name})
