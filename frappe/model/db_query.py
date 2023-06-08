@@ -404,7 +404,32 @@ class DatabaseQuery:
 
 		table_count = 0
 		for field in self.fields:
-			if "." in field and "tab" not in field:
+			if "." in field and "tab" in field and " as " not in field:
+				actual_field = field
+				field = field.split('.')[1]
+				if field[0] == '`':
+					field = field[1:]
+				if field[-1] == '`':
+					field = field[:-1]
+				original_field = field
+				alias = None
+				if " as " in field:
+					field, alias = field.split(" as ")
+					original_field = field
+				field = f"`tab{self.doctype}`.`{field}` as `{alias or original_field}`"
+				linked_field = {}
+				if frappe.db.get_value("DocType", self.doctype):
+					linked_field = frappe.get_meta(self.doctype).get_field(original_field)
+				indirect_link = frappe.get_hooks(app_name='frappe').indirect_link
+				if hasattr(linked_field, "fieldtype") and linked_field.fieldtype == "Link" and hasattr(linked_field, "options") and 'everest' in frappe.get_installed_apps() and (frappe.db.get_value("DocType", self.doctype, "Module") == "Everest" or self.doctype in indirect_link):
+					linked_doctype = linked_field.options
+					self.append_link_table(linked_doctype, field, table_count, "name")
+					title = get_doctype_title(linked_doctype)
+					field = f"`tab{linked_doctype}_{table_count}`.`name` as `{alias or original_field}`, `tab{linked_doctype}_{table_count}`.`{title}` as `{alias or original_field}_title`"
+					table_count += 1
+				self.fields[self.fields.index(actual_field)] = field
+
+			elif "." in field and "tab" not in field:
 				original_field = field
 				alias = None
 				if " as " in field:
@@ -427,6 +452,7 @@ class DatabaseQuery:
 						field += f", `tab{child_linked_doctype}_{table_count}`.`{title}` as `{fieldname}_title`"
 				self.fields[self.fields.index(original_field)] = field
 				table_count += 1
+
 			elif "tab" not in field and not any(x for x in sql_functions if x in field.lower()):
 				actual_field = field
 				if field[0] == '`':
