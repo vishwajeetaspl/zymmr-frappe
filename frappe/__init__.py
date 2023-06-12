@@ -1517,7 +1517,7 @@ def get_hooks(
 	if app_name:
 		hooks = _dict(_load_app_hooks(app_name))
 	else:
-		if conf.developer_mode:
+		if conf.developer_mode or True:
 			hooks = _dict(_load_app_hooks())
 		else:
 			hooks = _dict(cache().get_value("app_hooks", _load_app_hooks))
