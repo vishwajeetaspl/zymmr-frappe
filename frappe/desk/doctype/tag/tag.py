@@ -82,7 +82,7 @@ class DocTags:
 		if not tag in tl:
 			tl.append(tag)
 			if not frappe.db.exists("Tag", tag):
-				frappe.get_doc({"doctype": "Tag", "name": tag}).insert(ignore_permissions=True)
+				frappe.get_doc({"doctype": "Tag", "name": tag}).insert()
 			self.update(dn, tl)
 
 	def remove(self, dn, tag):
