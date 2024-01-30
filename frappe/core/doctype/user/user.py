@@ -228,7 +228,7 @@ class User(Document):
 	def has_desk_access(self):
 		"""Return true if any of the set roles has desk access"""
 		if frappe.session.user not in ["Administrator", "Guest"]:
-			self.roles = [frappe._dict({"role": i }) for i in frappe.get_roles()]
+			self.roles = [frappe.new_doc("Has Role").update({"role": i }) for i in frappe.get_roles()]
 			# self.roles = [frappe._dict({"role": i }) for i in frappe.get_roles()]
 		if not self.roles:
 			return False
